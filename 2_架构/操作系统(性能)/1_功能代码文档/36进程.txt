@@ -1,0 +1,147 @@
+﻿文件：
+	C语言io：是上层IO（用户），上层IO操作文件时必须调用系统接口。
+	C++:io流
+	Linux:Linux是一个系统（用于管理与维护计算机的资源，是用户与设备之间的“中间商”）,系统为用户提供了大量的API（用户通过API间接操作设备或系统）
+	
+	3、字符设备  4、网络设备  5、块设备  6管道
+	
+文件类型：
+		1、普通文件  2、文件夹  
+	普通操作步骤：
+		1、打开文件
+			int open(const char *pathname, int flags);
+			返回值：文件的描述符（整型）   <0打开失败
+				Pathname:路径
+				flags：操作方式
+					O_RDONLY 只读打开   10  11
+					O_WRONLY 只写打开   01
+					O_RDWR   读写打开
+					O_TRUNC  截断
+					O_CREAT  创建
+					O_APPEND 追加
+					
+		2、操作文件
+			1、写
+				ssize_t read(int fd, void *buf, size_t count);
+				返回值：返回实际读的长度
+					fd:文件描述符
+					buf:缓冲区
+					cout:读取长度
+					
+					
+			2、读
+				ssize_t write(int fd, void *buf, size_t count);
+				返回值：返回实际写入的长度
+					fd:文件描述符
+					buf:缓冲区
+					cout:读取长度
+					
+			3、偏移
+				off_t lseek(int fd, off_t offset, int whence);
+				返回值：位置
+					offset:偏移量
+					whence：起点 当前 结尾
+				
+		3、关闭文件
+			close(int);
+
+
+		PS:open()打开时，返回值一般为大2呢？
+			因为系统觉得每个进程至少需要标准输出(屏幕sdout)，输入（键盘stdin），错误输出（error）。（返回值:占用最小的且未被打开的文件描述符）
+													1             0		                2
+		获取文件的属性：
+			stat(const char*pathname,struct stat*)
+
+
+
+	文件夹的操作：
+		1、遍历文件夹
+			1、打开文件
+				DIR* opendir(const char* path)
+			2、读取内容
+				struct dirent *readdir(DIR *dirp);
+				
+				  struct dirent {
+							   ino_t          d_ino;       /* inode number */
+							   off_t          d_off;       /* offset to the next dirent */
+							   unsigned short d_reclen;    /* length of this record */
+							   unsigned char  d_type;      /* type of file; not supported
+															  by all file system types */
+							   char           d_name[256]; /* filename */
+						   };
+					返回值：若读取文件夹结束时，则返回NULL
+				
+			3、关闭文件夹
+				closedir(DIR)
+		
+		
+练习：
+		1、ls
+		2、ll命令
+		3、深度遍历文件夹
+		
+		
+		
+
+
+程序：有限的指令的集合。（静态，以文件方式存放）
+	a.out   QQ.exe
+进程： 正在运行的程序（将程序执行一次的过程）
+	  *分配资源的单位。
+	  
+进程描述符：
+struct task_struct
+{
+	int pid;//进程的标识符
+	struct file_struct* buf[65535];//文件描述符
+	...
+};
+
+
+
+1、进程的状态：
+	Linux多任务操作系统：多个任务（进程）同时执行。
+	
+	运行态：由CPU正在执行的进程的状态。（获取到cpu的）
+			万事具备，也获得东风
+				
+	就绪态:万事具备，只等CPU    （就绪队列）----获取CPU----》运行态
+			万事具备，只欠东风
+	
+	阻塞态:条件不成立（打印机缺纸）----（条件成立）---》就绪态
+			万事不具备  
+			
+	结束态：进程退出的状态
+			进程退出
+	  
+2、获取进程号PID：标识进程的身份。
+		getpid();//获取当前进程pid
+		getppid();获取父进程pid
+		
+3、并发：多个任务同时执行
+    多进程：
+		int fork();//生成子进程，将父进程的空间复制一份给子进程
+				指令寄存器，会创建记录代码执行位置，这个东西也会拷贝一份到子进程
+			
+			返回值:父进程返回子进程的pid ，子进程返回0	
+				
+	Zombie僵尸进程：当子进程退出时，父进程不为子进程作"善后处理"时，子进程则成为僵尸进程。（标志:defcult）
+		
+		int wait(int* status);  //阻塞函数（同步函数）
+		返回值：？
+		形参：
+			status: 状态（子进程退出时，会有一个状态给父进程）
+		
+练习题：
+			1、熟练
+			2、完成cat a.txt
+			3、完成cp a.txt  b.txt
+		
+		
+
+		
+		
+		
+		
+		
+		

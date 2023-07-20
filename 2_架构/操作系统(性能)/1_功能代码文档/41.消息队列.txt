@@ -1,0 +1,303 @@
+["abc"  1] ["bcd"  1] ["efg"  2 ] ["xyz" 2] ["af"  1] 
+
+
+
+消息队列，Unix的通信机制之一，可以理解为是一个存放消息（数据）容器。
+		  将消息写入消息队列，然后再从消息队列中取消息，一般来说是先进先出（fifo）的顺序。
+		  可以解决两个进程的读写速度不同（处理数据速度不同），系统耦合等问题，而且消息队列里的消息哪怕进程崩溃了也不会消失。
+ 
+最简单的消息队列的使用流程
+	①ftok函数生成唯一键值
+	②msgget函数创建消息队列
+	③msgsnd函数往消息队列发送消息
+	④msgrcv函数从消息队列读取消息
+	⑤msgctl函数进行删除消息队列
+	
+ 
+		一个消息数据应该由以下一个结构体组成，举个例子
+
+		struct mymesg{
+
+		long  mtype;	//类，消息队列可以控制读取相应类型的数据，这时就不一定是先进先出的顺序了，文章后面会继续介绍
+							一定要大于0,作用于消息选择(优先级)
+							
+		char mtext[20];	//数据，传递的数据存放在这里面
+
+		};
+1.ftok函数生成键值
+	每一个消息队列都有一个对应的键值（key）相关联（共享内存、信号量也同样需要）。
+	所需头文件#include<sys/ipc.h>
+	函数原型 key_t ftok(const char *path ,int id);
+		1.形参:
+		path为一个已存在的路径名
+		
+		id为0~255之间的一个数值，代表项目ID，自己取
+		2.返回值:
+			返回值：成功返回键值（相当于32位的int）。出错返回-1
+	例如：key_t key = ftok( “/tmp”, 66);
+ 
+2.msgget函数：创建消息队列
+	所需头文件#include<sys/msg.h>
+	函数原型 int msgget(key_t key,int flag);
+		1.形参
+		key为ftok生成的键值
+		
+		flag为所需要的操作(operator)和权限(permission)，可以用来控制创建一个消息队列。
+			操作：
+			flag的值为IPC_CREAT：
+					1.如果不存在key值的消息队列，且权限不为0，则创建消息队列，并返回一个消息队列ID。
+					2.如果存在，则直接返回消息队列ID。
+			
+			flag的值为 IPC_CREAT | IPC_EXCL：
+					1.如果不存在key值的消息队列，且权限不为0，则创建消息队列，并返回一个消息队列ID。
+					2.如果存在，则产生错误。
+			权限（permission）：
+				最低有效位来定义消息队列的权限（注：执行权限不被使用）
+			
+		2.返回值:
+			返回值：成功返回消息队列ID；出错返回-1
+
+	例如：int id = msgget(key,IPC_CREAT|IPC_EXCL|0666);创建一个权限为0666（所有用户可读可写，具体查询linux权限相关内容）的消息队列，
+														并返回一个整形消息队列ID，如果key值已经存在有消息队列了，则出错返回-1。
+		 
+	 int id = msgget(key,IPC_CREAT|0666);创建一个权限为0666（所有用户可读可写，具体查询linux权限相关内容）的消息队列，并返回一个消息队列ID，
+										如果key值已经存在有消息队列了，则直接返回一个消息队列ID。
+ 
+3.msgsnd函数往消息队列发送消息：snd(send)
+
+	所需头文件#include<sys/msg.h>
+	函数原型 int msgsnd(int msgid,const void *ptr,size_t nbytes,int flag);  
+		1.形参:
+		msgid:为msgget返回的消息队列ID值
+		
+		ptr:为消息结构体mymesg指针,指向调用者定义的结构体
+		
+		nbytes:为消息结构体mymesg里的字符数组mtext大小，sizeof(mtext)，是一个非负整数值
+		
+		flag（标记，标志：  为文件掩码）:值可以为0、IPC_NOWAIT
+			为0时，当消息队列满时，msgsnd将会阻塞，直到消息能写进消息队列或者消息队列被删除。
+			
+			为IPC_NOWAIT时，当消息队列满了，msgsnd函数将不会等待，会立即出错返回EAGAIN
+
+		2.返回值:
+		返回值：成功返回0；错误返回-1
+	例如：msgsnd(id,(void *)&ckxmsg,512,0);
+ 
+4.msgrcv函数从消息队列读取消息  rcv(receive)
+	所需头文件#include<sys/msg.h>
+
+	函数原型 ssize_t msgrcv(int msgid,void *ptr,size_t nbytes,long type,int flag);
+		1.形参：
+		msgid:为msgget返回的消息队列ID值
+		
+		ptr:为消息结构体mymesg指针，指向调用者定义的结构体
+		
+		nbytes:为消息结构体mymesg里的字符数组mtext大小，sizeof(mtext)
+		
+		type:在结构体mymesg里我们定义了一个long int mtype， 用于分辨消息的类型
+			type ==0 返回队列中的第一个消息
+			
+			type > 0 返回队列中消息类型为 type 的第一个消息
+			
+			type < 0 ：返回队列中消息类型值 小于等于 type绝对值的消息，
+					   如果这种消息有若干个，则取类型值最小的消息
+		
+		flag:可以为0、IPC_NOWAIT、IPC_EXCEPT
+			1.为0时，阻塞式接收消息，没有 该类型的消息msgrcv函数一直阻塞等待
+			
+			2.为IPC_NOWAIT时，如果没有返回条件的消息调用立即返回，此时错误码为ENOMSG
+			
+			3.为IPC_EXCEPT时，与type配合使用返回队列中第一个类型不为type的消息
+			
+		2.返回值：
+		返回值：成功返回消息数据部分的长度；错误返回-1
+
+	例如：msgrcv(id,(void *)&ckxmsg,512,1,0);
+ 
+ 
+5.msgctl函数对消息队列进行控制
+	作用:简单的操作就是删除消息队列了，也可以获取和改变消息队列的状态
+
+	所需头文件#include<sys/msg.h>
+	函数原型int msgctl(int msgid, int cmd, struct msqid_ds *buf);
+		1.形参：
+		msgid就是msgget函数返回的消息队列ID
+
+		cmd有三个，
+				1.常用删除消息队列的为:IPC_RMID；
+				2.IPC_STAT：取此队列的msqid_ds结构，并将它存放在buf指向的结构中；
+				3.IPC_SET：改变消息队列的状态，把buf所指的msqid_ds结构中的uid、gid、mode复制到消息队列的msqid_ds结构内。
+				（内核为每个消息队列维护着一个结构体，结构体名为msqid_ds，这里就不讲啦，
+					里面存放着消息队列的大小，pid，存放时间等一些参数）
+
+		buf  就是结构体msqid_ds  通常为NULL
+		
+		2.返回值:
+			返回值：成功返回0；错误返回-1
+			
+	例如：msgctl(id,IPC_RMID,NULL);删除id号的消息队列
+
+
+
+
+
+
+
+
+
+#include<stdio.h>
+
+#include<stdlib.h>
+
+#include<string.h>
+
+#include<sys/msg.h>
+
+#include<sys/ipc.h>
+
+struct mymesg{
+
+	long int mtype;
+
+	char mtext[512];
+
+};
+
+int main()
+
+{
+
+	int id = 0;
+
+	struct mymesg ckxmsg;
+
+	key_t key = ftok("/tmp",66);
+
+	id = msgget(key,IPC_CREAT | 0666);
+
+	if(id == -1)
+
+	{
+
+		printf("create msg error \n");
+
+		return 0;
+
+	}
+
+	while(1)
+
+	{
+
+		char msg[512];
+
+		memset(msg,0,sizeof(msg));
+
+		ckxmsg.mtype = 1;
+
+		printf("input message:");
+
+		fgets(msg,sizeof(msg),stdin);
+
+		strcpy(ckxmsg.mtext,msg);
+
+ 
+
+		if(msgsnd(id,(void *)&ckxmsg,512,0) < 0)
+
+		{
+
+			printf("send msg error \n");
+
+			return 0;
+
+		}
+
+ 
+
+		if(strncmp(msg,"QUIT",4) == 0)
+
+			break;
+
+	}
+
+	if(msgctl(id,IPC_RMID,NULL) < 0)
+
+	{
+
+		printf("del msg error \n");
+
+		return 0;
+
+	}
+
+	return 0;
+
+}
+2.client.c
+
+#include<stdio.h>
+
+#include<stdlib.h>
+
+#include<string.h>
+
+#include<sys/msg.h>
+
+#include<sys/ipc.h>
+
+struct mymesg{
+
+	long int mtype;
+
+	char mtext[512];
+
+};
+
+int main()
+
+{
+
+	int id = 0;
+
+	struct mymesg ckxmsg;
+
+	key_t key = ftok("/tmp",66);
+
+	id = msgget(key,0666|IPC_CREAT);
+
+	if(id == -1)
+
+	{
+
+		printf("open msg error \n");
+
+		return 0;
+
+	}
+
+	while(1)
+
+	{
+
+		if(msgrcv(id,(void *)&ckxmsg,512,1,0) < 0)
+
+		{
+
+			printf("receive msg error \n");
+
+			return 0;
+
+		}
+
+		printf("data:%s\n",ckxmsg.mtext);
+
+		if(strncmp(ckxmsg.mtext,"QUIT",4) ==0)
+
+			break;
+
+	}
+
+	return 0;
+
+}

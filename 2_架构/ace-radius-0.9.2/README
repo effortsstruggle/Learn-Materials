@@ -1,0 +1,55 @@
+Introduction
+------------
+
+ACE RADIUS library is a portable open-source implementation of RADIUS protocol, 
+as defined in RFCs 2865 and 2866. It's written in C++ and supports wide 
+variety of POSIX-compliant platforms, including Linux and Solaris. 
+
+ACE RADIUS library is licensed under BSD License, which allows its use both 
+in open-source and commercial projects.
+
+Visit project homepage for more details: http://ace-radius.sourceforge.net 
+
+
+Building & Installing on Linux/Solaris platform  
+-----------------------------------------------
+
+Use the following commands to build and install ACE RADIUS library:
+    ./configure
+    make
+    make install 
+
+Additional configuration options may be passed to the ./configure script.
+For example to compile the library with SunStudio 12 compiler on Solaris 
+machine, use:
+    ./configure CXX=/opt/SUNWspro/bin/CC
+    make
+    make install 
+
+The library is installed into the /usr/local directory by default.
+To change this, pass "--prefix" parameter to the ./configure script.
+
+Refer to INSTALL file for additional information.
+
+
+Building on Windows platform  
+----------------------------
+
+Open "ace-radius.sln" solution file in Visual Studio 2005 or later.
+Build all solution components.
+
+
+Test applications
+-----------------
+
+ACE RADIUS library is accompanied by a sample RADIUS client and server 
+applications, located in the "test" directory. Run both applications
+on the same machine (in two different terminal sessions) to verify the 
+basic ACE RADIUS library functionality. If library works correctly,
+you should see a "successful packet transmission" reported by the client.
+
+You may also run sample RADIUS client and server applications on two
+different machines and capture the traffic with some network sniffer
+(e.g. Wireshark). To do so, use the following commands:
+   on the 1st machine:   test/server
+   one the 2nd machine:  test/client <IP address of 1st machine> 

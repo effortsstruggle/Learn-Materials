@@ -1,0 +1,27 @@
+﻿C++ 标准模板库(STL):C++ STL (Standard Template Library标准模板库) 是通用类模板和算法的集合，它提供给程序员一些标准的数据结构的实现如 queues(队列), lists(链表), 和 stacks(栈)等.
+
+顺序存储结构 
+	C++ Vectors ：向量   包含着一系列连续存储的元素,其行为和数组类似
+	
+	C++ Lists：双线性链表,只能顺序访问（从前往后or从后往前）
+		头文件：#include<list>
+		特点:将元素按顺序存储在链表中,增删快，查询慢
+	C++ Double-Ended Queues ：双向队列和向量很相似，但是它允许在容器头部快速插入和删除（就像在尾部一样）。
+
+容器适配器 
+	C++ Stacks (堆栈,就是栈)：是一个容器类的改编，为程序员提供了堆栈的全部功能，——也就是说实现了一个先进后出（FILO）的数据结构
+	C++ Queues 
+	
+	C++ Priority Queues 
+联合容器 
+	C++ Bitsets 
+	C++ Maps 
+	
+	C++ Multimaps 
+	C++ Sets 
+	C++ Multisets 
+
+学习STL需要查询c++帮助文档
+	
+
+

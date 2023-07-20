@@ -1,0 +1,186 @@
+程序执行时：
+	1、除数为0
+	2、输入年龄：-20
+	3、new申请空间失败
+	4、访问数组越界int buf[10];   buf[1000];非法地址，打开文件失败时操作文件
+	...
+问题：如果上述不加识别并处理，可能导致程序奔溃
+
+
+所谓“处理”，可以是给出错误信息，然后让程序沿一条不会出错的路径继续执行。也有时候不得不结束程序，但是在结束程序之前作一些善后处理（例如：关闭文件...）
+
+C++异常处理基本语法 ：
+	1、抛出错误：
+		throw 表达式;
+	  PS:该语句抛出一个异常。
+			异常表达式：可以是基本类型，也可以是类对象
+	  
+	2、try-cache语句的语法：
+		try     //try语句块
+		{
+			...
+		}
+		catch(异常类型)
+		{
+			...
+			//异常处理动作
+		}
+		...
+		catch(异常类型)
+		{
+			...
+		}
+		catch(...)//默认情况，当所有catch不匹配是，执行catch(...)
+		{
+		
+		}
+		工作流程：1、执行try-catch中的语句时，如果执行的过程中没有异常抛出，顺序执行。		 
+				  2、执行try-catch中的语句时，如果执行的过程中有异常抛出，抛出的表达式类型与catch中类型进行匹配。
+		
+		
+		PS:throw try-catch作用就是遇到错误并抛出错误时，将此情况交给用户处理，
+		   而不是不交用户处理直接交给系统处理-异常退出（_exit）
+	
+C++的标准异常类：
+	1、基类exception：将系统的错误分类并封装
+			
+						---->bad_typeid:使用 typeid 运算符时，如果其操作数是一个多态类的指针，
+										而该指针的值为 NULL，则会拋出此异常。
+						---->bad_cast : 在用 dynamic_cast 进行从多态基类对象（或引用）到派生类的引用的强制类型转换时，
+										如果转换是不安全的，则会拋出此异常
+										如下:
+												Derived  rd = dynamic_cast (基类对象);
+												 Derived & rd = dynamic_cast <Derived &>(基类对象);
+			exception   ---->bad_alloc：申请堆区异常，没有足够的内存时，会引发此异常
+										如下:
+											char * p = new char[0x7fffffff];  //无法分配这么多空间，会抛出异常
+						---->ios_base:failue:
+											默认状态下，输入输出流对象不会拋出此异常。
+											如果用流对象的 exceptions 成员函数设置了一些标志位，
+											则在出现打开文件出错、读到输入流的文件尾等情况时会拋出此异常
+						---->logic_error ---->out_of_range:
+										用 vector 或 string 的 at 成员函数根据下标访问元素时，如果下标越界，则会拋出此异常
+						
+
+		PS:上述每一个类都有一个公有方法;  what()说明报错理由
+						
+						
+						
+异常的再抛出：？
+	如果一个函数在执行的过程抛出了异常在本函数内就被catch块捕获，
+	那么该异常就不会抛给这个函数的调用者（上一层的函数）；
+	如果异常在该函数中没有被处理，则它就会抛给上一层函数。	
+
+		
+函数异常声明表：
+
+	为了增强程序的可读性和可维护性，使程序员在使用一个函数时就能看出这个函数可能会拋出哪些异常，
+	C++ 允许在函数声明和定义时，加上它所能拋出的异常的列表，具体写法如下：
+			void func() throw (int, double, A, B, C);
+	或
+			void func() throw (int, double, A, B, C){...}
+
+	上面的写法表明 func 可能拋出 int 型、double 型以及 A、B、C 三种类型的异常。
+	异常声明列表可以在函数声明时写，也可以在函数定义时写。如果两处都写，则两处应一致。
+
+
+	如果异常声明列表如下编写：
+		void func() throw ();
+	则说明 func 函数不会拋出任何异常。
+	
+		
+	PS：
+	函数如果拋出了其异常声明列表中没有的异常，在编译时不会引发错误，但在运行时， Dev C++ 编译出来的程序会出错；
+	用 Visual Studio 2010 编译出来的程序则不会出错，异常声明列表不起实际作用。
+		
+		
+		
+文件IO流：
+	头文件：#include<fstream>
+	
+	1、C++为用户提供了三个类，实现对文件的操作（封装）
+	  ofstream：写操作：写入到文件中
+		1、构造器
+			无参构造器
+			ofstream()  实例化一个对象，没有打开文件
+			有参构造器：打开szName文件
+			ofstream( const char* szName, int nMode = ios::out, int nProt = filebuf::openprot );
+			
+				
+			nMode:
+			ios::app 添加输出 a
+			ios::ate 当已打开时寻找到EOF 
+			ios::binary 以二进制模式打开文件 
+			ios::in 为读取打开文件 r
+			ios::out 为写入打开文件 w
+			ios::trunc 覆盖存在的文件 
+
+			
+			方法：
+				void open( const char* szName, int nMode = ios::out, int nProt = filebuf::openprot );
+				
+				
+				bool fail();  返回值：打开失败 true  成功：false   
+				
+				close();
+				
+			重载运算符：文本文件
+				operator<<(?)    以行为单位---文件文件
+				put(int);//写入一个字符
+				
+				二进制函数：
+					ostream& write( const char* pch, int nCount );
+						：用于输出流，从buffer中写num个字节到当前输出流中。
+	  
+	  ifstream 读操作：从文件中读取内容
+			重载运算符：文本文件
+				operator<<(?)    以行为单位---文件文件
+				getline(char*,int ilen);//读取文本文件中的行
+				get() 读取一个字符	  
+				
+				
+				二进制函数 ( 碰到EOF自动终止 )
+					 istream &read( char *buffer, streamsize num );
+								用于输入流，在将字符放入buffer 之前从流中读取num 个字节。如果碰到EOF，
+								read()中止，丢弃不论多少个字节已经放入
+					//详细信息:查看c++帮助文档
+					
+					
+	  fstream:读写操作：
+	  
+		
+	读写位置:输入流:seekg() tellg()     输出流：seekp() tellp()
+	
+		c++ 设置读写位置之前必须先清空与当前流相关量的标志(使用 fin.clear()  清除)
+		istream &seekg( off_type offset, ios::seekdir origin );
+
+			ios::beg
+			ios::end
+			ios::cur
+		
+1练习：
+	1、将26个小写字母写入到文件1.txt中
+	   再从文件中读取26个字母
+	
+	2、文本文件：
+		char buf[100];
+		int id;
+		char addr[100];
+		float score;
+		char sex;
+		1、将个人信息写入mymsg.txt中。写入5个学生信息（每个学生一行）
+		2、读取个人信息
+
+	3、拷贝文件:一读取一边拷贝 
+
+
+
+
+
+
+	
+		
+		
+		
+		
+		

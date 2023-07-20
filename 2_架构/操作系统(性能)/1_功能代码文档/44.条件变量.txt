@@ -1,0 +1,102 @@
+同步与互斥：
+	1、锁（互斥量）
+		
+	2、条件变量：利用线程间共享的全局变量进行同步的一种机制。
+	  2.1主要包括两个动作：
+		1、一个线程等等“条件成立”而挂起。在调用pthread_cond_wait之前必须先上锁（pthread_lock），
+			而在更新条件等待之前，Mutext保持锁定状态，并在线程挂起时（pthread_cond_wait)会解锁。收到信号，唤醒，并上锁。
+			pthread_cond_wait
+			
+		2、另一个线程使“条件成立”（给出条件成立信号）
+			pthread_cond_signal
+			pthread_cond_broadcast
+
+		注：条件变量必须结合互斥量配合使用。
+		//等待条件
+		while(!条件)
+		{
+			//等待信号到达
+			pthread_cond_wait(&cond,&mutex);
+		}
+		
+		//发送信号：	
+		pthread_cond_signal();//唤醒其中一个
+		pthread_cond_broadcast()//广播
+	3、信号量
+
+
+
+
+
+
+
+线程池：
+	普通同步模型：t1+t2 << t3
+		若为一个短时间的任务(t3)分配一个线程时，会出现性能下降（因为创建线程需要时间t1，释放线程也需要时间t2）。
+			
+	 否则使用线程池：   t1+t2> t3
+		1、在执行任务之前，先创建好几个线程放入到容器中。
+			1.如果没有任务则睡眠
+		    2.如果有任务，则从线程池中取出一个空闲线程来执行，
+				若没有空闲线程时，则等待执行。
+
+
+练习题：
+	1、熟练今天的条件变量
+	2、练习题：
+		1、用条件变量来完成 3 4 5 1 2 3 4 5 。。。	
+		2、用条件变量完成抢厕所。
+	3、线程池：可以百度
+
+//线程函数
+void* fun(void *arg)
+{
+	arg->run();
+}		   
+class threadPool
+{
+public:
+	threadPool();//5个线程， 
+	｛
+		for(5)
+			pthread_create( ...fun..this.);
+	｝
+	void run()
+	{
+		while(1)
+		{
+			lock
+			 while(任务数量条件)
+			{
+				pthread_cond_wait(...);
+			}
+			//跳出循环，说明任务来了
+			pfunction pfun=task.front();	
+			task.pop;
+			pfun();
+			unlock;
+		}
+	}
+	addTask()//保存任务
+	{
+		保存任务
+		task.push_back(abc);
+		唤醒
+	}
+	
+proected:
+	list<pfunction>* task;
+	
+};
+
+void abc()
+{
+	...
+}
+
+
+threadpool pool;
+
+
+
+rand()是一个随机函数  int类型

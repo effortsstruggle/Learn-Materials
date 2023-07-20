@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+	<Generators>
+		<!--
+		<Generator input="CSV">GeneratorFromCSV</Generator>
+		<Generator input="DatabaseAndPlanno">GeneratorFromDBWithDetail</Generator>
+		<Generator input="FlyPlanOutline">OutlineGenerator</Generator>
+		-->
+		<Generator input="DataBase">GeneratorFromDataBase</Generator>
+		<Generator input="ArrivedLandJW">LandTransportGenerator</Generator>
+		<Generator input="ArrivedTakeoffJW">TakeoffGenerator</Generator>
+		<Generator input="ArrivedMaintJW">MaintGenerator</Generator>
+		<Generator input="ArrivedDYaoJW">DYaoGenerator</Generator>
+	</Generators>
+</root>

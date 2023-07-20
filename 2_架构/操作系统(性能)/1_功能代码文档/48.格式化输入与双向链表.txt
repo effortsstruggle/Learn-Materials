@@ -1,0 +1,20 @@
+一、格式化字符串处理：
+	1、屏幕/键盘：
+		printf("%d %s %f\n",100,"abc",3.14)
+		scanf("%d %s %f",&a,buf,&f);
+	2、文件：
+		fprintf(fp,"%s %d %f\n","abc",100,3.14);
+		fscanf(fp,"%s %d %f",buf,&a,&f);
+	3、字符串：
+		char buf[100]="";
+		sprintf(buf,"%s %f %d\n","abc",3.14,100);
+		sscanf();
+		
+二、双向节点的模型：每一个节点不仅记录直接后继节点的地址 ，还记录它的直接前驱地址 
+	typedef struct Node
+	{
+		type data;//数据域
+		struct Node* next;//后继
+		struct Node* front;//前驱
+	}node;
+	方法：

@@ -1,0 +1,458 @@
+						Linux编程之select	
+
+
+异步IO:不管数据来不来  直接返回（你走你的，我走我的）;
+同步IO（阻塞完成的）:你不来数据我就不走（你一步，我一步）
+		一般IO都是同步IO（网络（recv），read，键盘（gets等））
+		
+//将键盘设置成异步
+	//1.先获取指定文件描述符的状态 
+	
+	int flag = fcntl()	
+			fcntl(int fd,int cmd,...): 操作文件描述符
+				fd: file descriptor
+				cmd:
+					F_GETFL:获取文件描述符
+					F_SETFL:将文件描述符设置成flag指定的值	fcntl(0,F_SETFL,flag);
+					
+	//2.将flag状态集中的同步去掉，其他保持不变
+		flag |= O_NONBLOCK;
+			O_NONBLOCK: 非阻塞  ，改变阻塞位上的状态改变，为非阻塞
+	
+Select/epoll模型: epoll 由管家告诉主人那个来了，主人调用该该函数(回调函数)
+		select : 只能监管文件描述符(io)
+
+
+1、作用：
+select系统调用的的用途是：在一段指定的时间内，监听用户感兴趣的文件描述符上可读、可写和异常等事件。(传统方法：多线程/进程来处理阻塞任务)
+		
+		 简单的说就是  select监听文件描述符的状态，是否发生改变
+
+	
+
+例子：	
+int iResult = recv(s, buffer,1024)
+					这是用来接收数据的，在默认的阻塞模式下的套接字里，recv会阻塞在那里，
+					直到套接字连接上有数据 可读，把数据读到buffer里后recv函数才会返回，
+					不然就会一直阻塞在那里。在单线程的程序里出现这种情况会导致主线程（单线程程序里只有一个默认的主线程）被阻塞,
+					这样整个程序被锁死在这里，如果永远没数据发送过来，那么程序就会被永远锁死。这个问题可以用多线程解决，
+					但是在有多个套接字连接的情况下，这不是一个好的选择，扩展性很差。
+再看例子：
+int iResult = ioctlsocket(s, FIOBIO, (unsigned long *)&ul);      iResult = recv(s, buffer,1024);
+	这一次recv的调用不管套接字连接上有没有数据可以接收都会马上返回。
+	原因就在于我们用ioctlsocket把套接字设置为非阻塞模式了。不过你跟踪一下就会发现，在没有数据的情况下，recv确实是马上返回了，
+	但是也返回了一个错误：WSAEWOULDBLOCK，意思就是请求的操作没有成功完成。
+
+看到这里很多人可能会说，那么就重复调用recv并检查返回值，直到成功为止，但是这样做效率很成问题，开销太大。
+
+
+2、为什么需要出现Select/poll？
+select模型的出现就是为了解决上述问题。
+select模型的关键是使用一种有序的方式，对多个套接字进行统一管理与调度 。
+
+	用户线程:										内核
+	文件描述符----select（管家，内核完成）-----》交个内核（监听文件描述符状态是否改变，
+															：不改变，一直睡
+															：改变，通知用户）
+	
+			《---------------通知--------------数据到达（文件描述符状态改变）
+			
+			---------------------------------->read数据
+			《--------------------------------read完成
+ 
+
+如上所示，用户首先将需要进行IO操作的socket添加到select中，然后阻塞等待select系统调用返回。
+	当数据到达时，socket被激活，select函数返回。用户线程正式发起read请求，读取数据并继续执行。
+	Ps:
+		从流程上来看， 使用select函数进行IO请求和 同步阻塞模型没有太大的区别，
+		甚至还多了添加监视socket，以及调用select函数的额外操作，效率更差。
+		但是，使用select以后最大的优势是用户可以在一个线程内同时处理多个socket的IO请求。
+	
+	用户可以注册多个socket，然后不断地调用select读取被激活的socket，即可达到在同一个线程内同时处理多个IO请求的目的。
+	而在同步阻塞模型中，必须通过多线程的方式才能达到这个目的。
+
+
+select流程伪代码如下：
+
+
+	select(socket);
+	while(1) 
+	{
+		sockets = select();
+		for(socket in sockets) 
+		{
+			if(can_read(socket)) //
+			{
+				read(socket, buffer);
+				process(buffer);
+			}
+		}
+	}
+}
+
+
+select相关API介绍与使用
+	#include <sys/select.h>
+	#include <sys/time.h>
+	#include <sys/types.h>
+	#include <unistd.h>
+	int select(int maxfdp, fd_set* readset, fd_set *writeset, fd_set *exceptset,struct timeval *timeout);
+
+参数说明：
+	maxfdp：被监听的文件描述符的总数，它比所有文件描述符集合中的文件描述符的最大值+1，因为文件描述符是从0开始计数的；10（0~9）
+	readfds、writefds、exceptset：分别指向可读、可写和异常等事件对应的描述符集合。
+	timeout:用于设置select函数的超时时间，即告诉内核select等待多长时间之后就放弃等待。timeout == NULL 表示等待无限长的时间
+	timeval结构体定义如下：
+	struct timeval
+	{      
+		long tv_sec;   /*秒 */
+		long tv_usec;  /*微秒 */   
+	};
+	返回值：超时返回0;失败返回-1；成功返回大于0的整数，这个整数表示就绪描述符的数目。
+
+	Ps:select只能死等一次（需要循环监听），一当状态发生改变,就立刻返回
+
+以下介绍与select函数相关的常见的几个宏：
+#include <sys/select.h>   
+	int FD_ZERO(int fd, fd_set *fdset);   //一个 fd_set类型变量的所有位都设为 0
+	
+	int FD_CLR(int fd, fd_set *fdset);  //清除 某个位（fd位）的文件描述符 
+	
+	int FD_SET(int fd, fd_set* fd_set);   //设置文件描述符集中的  某个位(fd位) 置位（填充状态）--fd
+											：文件描述符集的某个位上添加指定的 文件描述符（fd）
+	
+	int FD_ISSET(int fd, fd_set *fdset); //测试某个位是否属于集合（是否属于集合）
+
+select使用范例：
+	当声明了一个文件描述符集后，必须用FD_ZERO将所有位置零。之后将我们所感兴趣的描述符所对应的位  置位(填充状态)  ，操作如下：
+	fd_set rset; //文件描述符集  
+	int fd;   
+	FD_ZERO(&rset);//每一个位置0   
+	FD_SET(fd, &rset);  //监管sock 套接字
+	FD ISSET(stdin, &rset);
+	然后调用select函数，阻塞等待文件描述符事件的到来；如果超过设定的时间，则不再等待，继续往下执行。
+	select(fd+1, &rset, NULL, NULL,NULL);
+	select返回后，用FD_ISSET测试给定位（fd）  是否置位（填充状态）：
+	if(FD_ISSET(fd, &rset)   
+	{ 
+		... 
+		//do something  
+	}
+
+2、下面是一个最简单的select的使用例子：
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+
+int main()
+{
+	fd_set rd;
+	struct timeval tv;
+	int err;
+	
+
+	FD_ZERO(&rd);
+	FD_SET(0,&rd);
+	
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+	err = select(1,&rd,NULL,NULL,&tv);
+	
+	if(err == 0) //超时
+	{
+		printf("select time out!\n");
+	}
+	else if(err == -1)  //失败
+	{
+		printf("fail to select!\n");
+	}
+	else  //成功
+	{
+		printf("data is available!\n");
+	}
+
+	
+	return 0;
+}
+深入理解select模型：
+
+	理解select模型的关键在于理解fd_set,为说明方便，取fd_set长度为1字节，fd_set中的每一bit可以对应一个文件描述符fd。
+	则1字节长的fd_set最大可以对应8个fd。
+（1）执行fd_set set; FD_ZERO(&set); 则set用位表示是0000,0000。
+（2）若fd＝5,执行FD_SET(fd,&set);后set变为0001,0000(第5位置为1)
+（3）若再加入fd＝2，fd=1,则set变为0001,0011
+（4）执行select(6,&set,0,0,0)阻塞等待
+（5）若fd=1,fd=2上都发生可读事件，则select返回，此时set变为0000,0011。注意：没有事件发生的fd=5被清空。
+
+基于上面的讨论，可以轻松得出select模型的特点：
+（1）可监控的文件描述符个数取决与sizeof(fd_set)的值。我这边服务器上sizeof(fd_set)＝512，
+		每bit表示一个文件描述符，则我服务器上支持的最大文件描述符是512*8=4096。
+		据说可调，另有说虽然可调，但调整上限受于编译内核时的变量值。
+（2）将fd加入select监控集的同时，还要再使用一个数据结构array保存放到select监控集中的fd，
+		一是用于再select返回后，array作为源数据和fd_set进行FD_ISSET判断。
+		二是select返回后会把以前加入的但并无事件发生的fd清空，
+			则每次开始select前都要重新从array取得fd逐一加入（FD_ZERO最先），	
+			扫描array的同时取得fd最大值maxfd（FD_SETSIZE），用于select的第一个参数。
+（3）可见select模型必须在select前循环加fd，取maxfd，select返回后利用FD_ISSET判断是否有事件发生。
+
+#include <stdio.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <fcntl.h>
+#include <stdlib.h>
+
+
+int main(int argc, char* argv[])
+{
+    if(argc <= 2)
+	{
+		printf("usage: ip address + port numbers\n");
+		return -1;
+	}
+	
+	const char* ip = argv[1];
+	int port = atoi(argv[2]);
+
+        printf("ip: %s\n",ip);
+        printf("port: %d\n",port);
+	
+	int ret = 0;
+	struct sockaddr_in address;
+	bzero(&address,sizeof(address));
+	address.sin_family = AF_INET;
+	inet_pton(AF_INET,ip,&address.sin_addr);
+	address.sin_port = htons(port);
+	
+	int listenfd = socket(PF_INET,SOCK_STREAM,0);
+	if(listenfd < 0)
+	{
+		printf("Fail to create listen socket!\n");
+		return -1;
+	}
+	
+	ret = bind(listenfd,(struct sockaddr*)&address,sizeof(address));
+	if(ret == -1)
+	{
+		printf("Fail to bind socket!\n");
+		return -1;
+	}
+	
+	ret = listen(listenfd,5); //监听队列最大排队数设置为5
+	if(ret == -1)
+	{
+		printf("Fail to listen socket!\n");
+		return -1;
+	}
+	
+	struct sockaddr_in client_address;  //记录进行连接的客户端的地址
+	socklen_t client_addrlength = sizeof(client_address);
+	int connfd = accept(listenfd,(struct sockaddr*)&client_address,&client_addrlength);
+	if(connfd < 0)
+	{
+		printf("Fail to accept!\n");
+		close(listenfd);
+	}
+	
+	char buff[1024]; //数据接收缓冲区
+	fd_set read_fds;  //读文件操作符
+	fd_set exception_fds; //异常文件操作符
+	FD_ZERO(&read_fds);
+	FD_ZERO(&exception_fds);
+	
+	while(1)
+	{
+		memset(buff,0,sizeof(buff));
+		/*每次调用select之前都要重新在read_fds和exception_fds中设置文件描述符connfd，因为事件发生以后，文件描述符集合将被内核修改*/
+		FD_SET(connfd,&read_fds);
+		FD_SET(connfd,&exception_fds);
+		
+		ret = select(connfd+1,&read_fds,NULL,&exception_fds,NULL);
+		if(ret < 0)
+		{
+			printf("Fail to select!\n");
+			return -1;
+		}
+		
+		
+		if(FD_ISSET(connfd, &read_fds))
+		{
+			ret = recv(connfd,buff,sizeof(buff)-1,0);
+			if(ret <= 0)
+			{
+				break;
+			}
+			
+			printf("get %d bytes of normal data: %s \n",ret,buff);
+			
+		}
+		else if(FD_ISSET(connfd,&exception_fds)) //异常事件
+		{
+			ret = recv(connfd,buff,sizeof(buff)-1,MSG_OOB);
+			if(ret <= 0)
+			{
+				break;
+			}
+			
+			printf("get %d bytes of exception data: %s \n",ret,buff);
+		}
+		
+	}
+	
+	close(connfd);
+	close(listenfd);
+	
+	
+	return 0;
+}
+用select来解决socket中的多客户问题
+#include <sys/types.h> 
+#include <sys/socket.h> 
+#include <stdio.h> 
+#include <netinet/in.h> 
+#include <sys/time.h> 
+#include <sys/ioctl.h> 
+#include <unistd.h> 
+#include <stdlib.h>
+
+int main() 
+{ 
+    int server_sockfd, client_sockfd; 
+    int server_len, client_len; 
+    struct sockaddr_in server_address; 
+    struct sockaddr_in client_address; 
+    int result; 
+    fd_set readfds, testfds;
+	
+    server_sockfd = socket(AF_INET, SOCK_STREAM, 0);//建立服务器端socket 
+    server_address.sin_family = AF_INET; 
+    server_address.sin_addr.s_addr = htonl(INADDR_ANY); 
+    server_address.sin_port = htons(8888); 
+    server_len = sizeof(server_address); 
+    bind(server_sockfd, (struct sockaddr *)&server_address, server_len); 
+    listen(server_sockfd, 5); //监听队列最多容纳5个 
+    FD_ZERO(&readfds); 
+    FD_SET(server_sockfd, &readfds);//将服务器端socket加入到集合中
+    while(1) 
+    {
+        char ch; 
+        int fd; 
+        int nread; 
+        testfds = readfds;//将需要监视的描述符集copy到select查询队列中，select会对其修改，所以一定要分开使用变量 
+        printf("server waiting\n"); 
+
+        /*无限期阻塞，并测试文件描述符变动 */
+        result = select(FD_SETSIZE, &testfds, (fd_set *)0,(fd_set *)0, (struct timeval *) 0); //FD_SETSIZE：系统默认的最大文件描述符
+        if(result < 1) 
+        { 
+            perror("server5"); 
+            exit(1); 
+        } 
+
+        /*扫描所有的文件描述符*/
+        for(fd = 0; fd < FD_SETSIZE; fd++) 
+        {
+            /*找到相关文件描述符*/
+            if(FD_ISSET(fd,&testfds)) 
+            { 
+              /*判断是否为服务器套接字，是则表示为客户请求连接。*/
+                if(fd == server_sockfd) 
+                { 
+                    client_len = sizeof(client_address); 
+                    client_sockfd = accept(server_sockfd, 
+                    (struct sockaddr *)&client_address, &client_len); 
+                    FD_SET(client_sockfd, &readfds);//将客户端socket加入到集合中
+                    printf("adding client on fd %d\n", client_sockfd); 
+                } 
+                /*客户端socket中有数据请求时*/
+                else 
+                { 
+                    ioctl(fd, FIONREAD, &nread);//取得数据量交给nread（获取数据数量）
+                    
+                    /*客户数据请求完毕，关闭套接字，从集合中清除相应描述符 */
+                    if(nread == 0) 
+                    { 
+                        close(fd); 
+                        FD_CLR(fd, &readfds); //去掉关闭的fd
+                        printf("removing client on fd %d\n", fd); 
+                    } 
+                    /*处理客户数据请求*/
+                    else 
+                    { 
+                        read(fd, &ch, 1); 
+                        sleep(5); 
+                        printf("serving client on fd %d\n", fd); 
+                        ch++; 
+                        write(fd, &ch, 1); 
+                    } 
+                } 
+            } 
+        } 
+    } 
+
+    return 0;
+}
+
+//客户端
+#include <sys/types.h> 
+#include <sys/socket.h> 
+#include <stdio.h> 
+#include <netinet/in.h> 
+#include <arpa/inet.h> 
+#include <unistd.h> 
+#include <stdlib.h>
+#include <sys/time.h>
+
+int main() 
+{ 
+    int client_sockfd; 
+    int len; 
+    struct sockaddr_in address;//服务器端网络地址结构体 
+     int result; 
+    char ch = 'A'; 
+    client_sockfd = socket(AF_INET, SOCK_STREAM, 0);//建立客户端socket 
+    address.sin_family = AF_INET; 
+    address.sin_addr.s_addr = inet_addr("127.0.0.1");
+    address.sin_port = htons(8888); 
+    len = sizeof(address); 
+    result = connect(client_sockfd, (struct sockaddr *)&address, len); 
+    if(result == -1) 
+    { 
+         perror("oops: client2"); 
+         exit(1); 
+    } 
+    //第一次读写
+    write(client_sockfd, &ch, 1); 
+    read(client_sockfd, &ch, 1); 
+    printf("the first time: char from server = %c\n", ch); 
+    sleep(5);
+    
+    //第二次读写
+    write(client_sockfd, &ch, 1); 
+    read(client_sockfd, &ch, 1); 
+    printf("the second time: char from server = %c\n", ch);
+    
+    close(client_sockfd); 
+   
+    return 0; 
+}
+
+select总结：
+select本质上是通过设置或者检查存放fd标志位的数据结构来进行下一步处理。这样所带来的缺点是：
+1、单个进程可监视的fd数量被限制，即能监听端口的大小有限。一般来说这个数目和系统内存关系很大，
+	具体数目可以cat/proc/sys/fs/file-max察看。
+	32位机默认是1024个。64位机默认是2048.
+2、 对socket进行扫描时是线性扫描，即采用轮询的方法，效率较低：
+	当套接字比较多的时候，每次select()都要通过遍历FD_SETSIZE个Socket来完成调度,
+	不管哪个Socket是活跃的,都遍历一遍。这会浪费很多CPU时间。如果能给套接字注册某个回调函数，
+	当他们活跃时，自动完成相关操作，那就避免了轮询，这正是epoll与kqueue做的。
+	
+3、需要维护一个用来存放大量fd的数据结构，这样会使得用户空间和内核空间在传递该结构时复制开销大。
+
+

@@ -1,0 +1,99 @@
+默写：
+	1、定义一个字符数组char buf[]="0928746512";
+	  char* p=buf;通过p完成如下两题
+	   1、求长度
+	   2、选择排序
+ 
+
+指针数组：用于存储指针的数组
+	定义指针数组：
+		int* buf[长度]={地址,...,...};
+
+引用/修改空间的内容：
+	1、变量名
+	2、引用
+	3、地址
+	
+空指针：作为指针指向的空间不存在的标识
+	#define NULL   (int*)0
+		
+函数与指针联系：
+	1、指针作形参：用于调用函数 修改空间值(看到变量名，引用自身空间的内容)
+		void swap(int* pa,int* pb)
+		{
+			
+			
+		}
+	2、数组作形参：该数组不是数组空间，而是指针变量 
+		void show(int buf[]/*int* buf*/)
+		{
+		}
+	3、指针作返回类型：该函数的结果为一个指针
+		类型* 函数名（...）
+		{
+			...
+		}
+	
+练习题：
+		1、通过函数模板，实现一个display函数，完成对所有类型数组输出
+			...
+			void display(T buf[],int ilen)
+			{
+			}
+			
+		2、定义一个函数selectSort实现对数组进行排序
+			void selectSort(int* buf[],int ilen)
+			拓展：实现函数模板
+			
+		3、实现一个fun函数，对字符数组中小写字符改为大写字符
+			void fun(char str[])
+			{
+			}
+		4、实现一个int mystrlen(char* buf)函数，求字符数组中的长度
+		
+		5、实现一个char* mystrchr(char*,char ch)函数，实现对字符的查找
+		
+					char str[]="hello world";
+			调用：  char* p=strchr(str,l);
+		拓展：实现mystrrcr函数(从尾字符开始）
+		
+
+晚上练习题：
+	1完成mysrcmp函数。原型
+	int strcmp(char* str1,char* str2);
+		str1>str2  返回 1
+		str1=str2  返回0
+		str1<str2  返回 -1
+
+	2完成一个函数，实现统计数组中奇数的个数，并返回。
+		int calc(int buf[],int ilen);
+
+	3完成实现atoi
+		int atoi(char* str);
+		将str字符串转换为整型
+	   拓展：实现atof（不作要求完成）
+
+
+	4、分析输出，为什么？（常见笔试题）
+	   signed int num1=-10;
+	   unsinged int num2=10;
+	   if(num1>num2)
+		cout<<"AAA"<<endl;
+	   else
+		cout<<"BBB"<<endl;
+
+	   
+
+晚上：
+	1、将今天的视频再看一次。
+	2、今天的案例和今天讲过的练习再刷一次
+	3、今天的练习做完成。
+	4、复习（运算符+流程控制）
+
+
+
+
+	
+	
+	
+	

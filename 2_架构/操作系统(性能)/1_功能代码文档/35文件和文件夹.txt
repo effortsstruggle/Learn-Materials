@@ -1,0 +1,152 @@
+文件：
+	C语言io：是上层IO（用户），上层IO操作文件时必须调用系统接口。
+	C++:io流
+	Linux:Linux是一个系统（用于管理与维护计算机的资源，是用户与设备之间的“中间商”）,系统为用户提供了大量的API（用户通过API间接操作设备或系统）
+	
+	
+帮助文档：	
+	MAN 1 2 3 4 
+	1、Standard commands （标准命令）
+	2、System calls （系统调用）
+	3、Library functions （库函数）
+	4、Special devices （设备说明）
+	5、File formats （文件格式）
+	6、Games and toys （游戏和娱乐）
+	7、Miscellaneous （杂项）
+	8、Administrative Commands （管理员命令）
+	9 其他（Linux特定的）， 用来存放内核例行程序的文档。
+
+	
+	头文件：
+			#include <sys/types.h>  
+			#include <sys/stat.h>
+			#include <fcntl.h>
+			#include <unistd.h>
+文件类型：
+		1、普通文件  2、文件夹  3、字符设备  4、网络设备  5、块设备  6管道
+	
+	普通操作步骤：
+		1、打开文件
+			int open(const char *pathname, int flags);
+			返回值：文件的描述符（整型）   <0打开失败
+				Pathname:路径
+				flags：操作方式
+					O_RDONLY 只读打开
+					O_WRONLY 只写打开
+					O_RDWR   读写打开
+					O_TRUNC  截断
+					O_CREAT  创建
+					O_APPEND 追加
+					
+		2、操作文件
+			1、写
+				ssize_t read(int fd, void *buf, size_t count);
+				返回值：返回实际读的长度
+					fd:文件描述符
+					buf:缓冲区
+					cout:读取长度
+					
+					
+			2、读
+				ssize_t write(int fd, void *buf, size_t count);
+				返回值：返回实际写入的长度
+					fd:文件描述符（file descriptor）
+					buf:缓冲区
+					cout:读取长度
+					
+			3、偏移
+				off_t lseek(int fd, off_t offset, int whence);
+				返回值：位置     lseek 的返回值  就是 c中ftell() 的作用
+					offset:偏移量
+					whence：起点 (SEEK_SET)当前(SEEK_CUR) 结尾(SEEK_END)
+				
+		3、关闭文件
+			close(int);
+
+
+		PS:open()打开时，返回值一般为大2呢？
+			因为系统觉得每个进程至少需要标准输出，输入，错误输出。（返回值:占用最小的且未被打开的文件描述符）
+
+		
+	Ps:	
+			获取文件的属性：
+			stat(const char*pathname,struct stat&)
+				
+	文件夹的操作：
+		1、遍历文件夹
+			1、打开文件
+				DIR* opendir(const char* path)
+			2、读取内容
+				struct dirent *readdir(DIR *dirp);
+				
+				  struct dirent {
+							   ino_t          d_ino;       /* inode number */
+							   off_t          d_off;       /* offset to the next dirent */
+							   unsigned short d_reclen;    /* length of this record */
+							   unsigned char  d_type;      /* type of file; not supported
+															  by all file system types */
+							   char           d_name[256]; /* filename */
+						   };
+					返回值：若读取文件夹结束时，则返回NULL
+				
+			3、关闭文件夹
+				closedir(DIR)
+
+
+
+程序：有限的指令的集合。（静态，以文件方式存放）
+	a.out   QQ.exe
+进程： 正在运行的程序（将程序执行一次的过程）
+	  *分配资源的单位。
+	  
+进程描述符：
+	 struct file_struct//文件描述符
+		{
+				long seek;
+				long inode;//节点
+				文件权限
+				物理位置
+				大小
+				....
+		}
+		struct task_struct//进程描述符 --》进程:分配 资源单位
+							程序运行，就分配该结构体
+		{
+			int pid;
+			。。。。
+			struct file_struct[65535];//文件描述符
+		}
+	  
+
+	  
+1、获取进程号PID：标识进程的身份。
+		API:文件？
+		getpid();
+		
+		
+		
+		
+		
+		
+		
+练习题：
+			1、熟练
+			2、完成cat a.txt
+			3、完成cp a.txt  b.txt
+		
+		
+		
+		
+练习：
+		1、ls
+		2、ll命令
+		3、深度遍历文件夹
+		
+		
+		
+		
+		
+		
+		
+		
+		

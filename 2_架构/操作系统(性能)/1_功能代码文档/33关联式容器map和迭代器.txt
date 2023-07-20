@@ -1,0 +1,65 @@
+一、迭代器:
+	1.迭代器是一个类
+	2.迭代器可被用来访问一个容器类的所包函的全部元素，其行为像一个指针
+
+ vector<int>::iterator the_iterator;
+   the_iterator = the_vector.begin();
+	while( the_iterator != the_vector.end() ) {
+		total += *the_iterator;//解引用
+		the_iterator++;
+	}
+
+	PS:1.通过对一个迭代器的解引用操作（*），可以访问到容器所包含的元素。 
+		2.迭代器是一个类，所以说我们写迭代器时，需要重写它的运算符
+
+
+二·、关联式容器：（map映射  --》 键 到  值的映射）
+	1.头文件:
+		#include<map>
+		map<T key , T1  value>
+	2.map底层：
+		map底层:(不可出现 同key 的键值对,默认排序(按key排))
+		template<typename T1,typename T2>
+		class pair
+		{
+		public:
+			pari(const T1& a, const T2& b): first(key), second(value){}
+			
+
+		private:
+			T1 first;//存储key值
+			T2 second;//存储value值
+		};
+		
+		template<typename T1,typename T2>
+		class map
+		{
+		private:
+			pair<T1,T2> buf[100];
+		};
+		
+
+	map是一种关联式容器，包含“键/值”对
+	map<key1,值1> m;
+	
+	m.insert(pairs(key1,值1));
+	....
+	pairs{key2,值2}
+	pairs{key3,值3}
+	pairs{key4,值4}
+	pairs{key5,值5}
+	。。。
+	
+	PS:不能出现同key的键值对,且自动按key大小进行排序插入。
+	
+	
+主菜单：
+		1、添加学信息
+		2、删除信息
+		3、查看学生
+			1、查看成绩
+			2、查看女生信息
+			3、查看男生信息
+			4、查看最高分学生信息
+			5、最低分学生信息
+			6、查看平均分

@@ -1,0 +1,45 @@
+v0.9.2
+    11/08/2009
+    Added support for Windows platform via native Winsock2 API
+    (tested on Windows XP using Visual Studio 2005).
+
+v0.9.1
+    23/07/2009
+    ACE RADIUS library no longer depends on ACE (Adaptive Communication 
+    Environment). Instead the code is changed to be POSIX-compliant and
+    autoconf/automake toolchain is used for portability. 
+    Dependency on threads library is also removed to make the library more 
+    portable and versatile (e.g. now it can be used to implement PAM  
+    RADIUS module).
+    Major code re-factoring and coding style updates.
+    New implementation of RadiusClientStack and RadiusServerStack classes.
+
+----
+
+v0.8
+    20/07/2006
+    Bug in UserPassword attribute length calculation.
+    
+v0.7
+    30/10/2005
+    100% CPU bug in CTask class.
+    Accounting request authenticator.
+    Bug with multiple CClientConnections with different shared secret.
+    
+v0.6
+    01/08/2005
+    Better access to vendor-specific attribute's data.
+    Solved a bug in packet parser that could potentially cause
+    endless loop on invalid packets.
+    
+v0.5
+    17/11/2004
+    Redesigned secret key management.
+    New CRadiusSecret class. Secret key is defined per instance of 
+    CRadiusClientConnection and CRadiusServerStack classes. 
+    CRadiusClientStack now reencodes User-Password attribute when 
+    packet is retransmitted through new connection.
+
+v0.4 
+    18/07/2004
+    First version released to the public.

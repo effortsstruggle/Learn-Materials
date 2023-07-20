@@ -1,0 +1,143 @@
+异步：
+
+进程：
+	IPC:进程间通信：s
+		1.管道:
+		2.信号:(异步模式 Async)：软中断信号，用于通知进程发生了异步事件（Ctrl+C,Ctrl+\），
+							在软件层上是垒 中断机制的一种模拟。(进程也不知道信号什么时候达到，收到什么信号)
+				
+								异步:突然发生(进程不知道信号什么时候到)
+								
+								
+								同步（sync）:就是发出一个功能调用时，在没有得到结果之前，该调用就不返回或不执行后续操作（一件事一件事的做）  
+								异步：异步过程调用发出后，调用者在没有得到结果之前，就可以继续执行后续操作。（你走你的，我走我的）
+									  
+									  
+									  当这个调用完成后，一般通过状态、通知和回调来通知调用者
+									
+									对于通知调用者的三种方式，具体如下：
+										1.状态:即监听被调用者的状态（轮询），调用者需要每隔一定时间检查一次，效率会很低。
+
+										2.通知:当内核执行完成后，发出通知告知调用者，无需消耗太多性能。
+
+										3.回调:与通知类似，当被调用者执行完成后，会调用调用者提供的回调函数。
+		
+								同步和异步区别：请求发出后，是否需要等待结果，才能继续执行其他操作
+			
+			PS:1、信号 是IPC中唯一的异步通信模式。
+				2、一个进程不必要做任何等待一个信号的到来。（飞哥给班上同学点名）
+				查看信号--（kill -l 命令）：
+					Linux下有64种信号（不同的信号代表不同的事件）
+						分为两种：
+						前32种   不可靠信号,“不知道次数，和时间”  只有一个int型 完成  32bit位  
+									每一个信号对应一个位
+										产生---递达 ()
+						后32种   可靠信号
+						
+			
+			一、信号处理流程三步：
+				
+				1、信号诞生:软硬件产生（Ctrl+C（键盘按下），  管道破裂。。。）
+				
+				2、信号注册 ：signal(信号，处理方式);   美国国家标准协会 c  信号  处理（handling）
+						信号处理动作：收到信号后的处理动作
+									三种处理方式: SIG_IGN   SIG_DFL   自定义
+									1、信号忽略处理：收到信号，但不处理    SIG_IGN
+									2、信号默认处理：系统为每个信号都作了默认处理（直接退出进程）  SIG_DFL
+									3、自定义   接收  void (*) (int)     函数名			
+				3、执行和注销：系统内核自己处理（暂时不用管）
+			
+			常用信号:
+				SIGHUP  :终端被挂起
+				SIGINT  ：CTRL+C
+				SIGQUIT ：键盘的退出被按下
+				SIGILL  :非法执行
+				SIGABRT :调用abort函数时，让进程退出
+				SIGFPE  ：浮点异常
+				SIGKILL ：干掉进程 （只能默认处理）
+				SIGALRM : 闹钟信号
+				SIGUSR1  SIGUSR2 :用户自定义信号
+			
+			二、向 进程 发送信号 -----  信号诞生的一步：
+					int kill(pid_t pid, int signal); 发送一个信号给指定 pid号 的进程	
+							
+					int raise(int sig); 给本进程（呼叫者）发送信号// int raise(int sig){return kill(getpid(),sig)}
+			三、
+				信号递达:
+					实际执行信号的处理动作 称为信号的递达
+				信号未决(未决定)：从产生----递达之间的状态
+					PS:进程可以选择阻塞某个信号，被阻塞的信号保持在信号的未决。（阻塞和忽略是有区别：），一当取消阻塞，此信号就会递达。
+				
+				信号构成:
+					block(阻塞,屏蔽位) 1（屏蔽） 和 0 （未屏蔽），32位 
+					
+					pending(未决) 	1 和 0  ，32位		
+					
+					hand：pfuntion * buf[32];处理方式
+				
+			四、屏蔽信号集：
+					1.定义一个信号集
+					2.清空信号集，或者填满信号集
+					3.添加指定信号（或者删除指定信号），到信号集中
+					4.修改内核信号集（覆盖）
+					
+					int sigemptyset(sigset_t *set);  //将set所有bit位清空
+					
+					int sigfillset(sigset_t *set); //将所用信号加入到屏蔽集中
+					int sigaddset(sigset_t* set, SIGINT); //添加指定信号到屏蔽集中
+					int sigdelset(sigset_t *set, int signum); //从屏蔽集中删除指定信号
+					int sigismember(const sigset_t *set, int signum); //测试信号集中是否包含指定信号
+					
+		`			//获取未决集
+					int sigpending(sigset_t *set);
+						
+			（修改）覆盖内核的信号屏蔽集，利用set
+					int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
+						how： SIG_BLOCK  
+							  SIG_UNBLOCK
+							  SIG_SETMASK
+						set:  若how为SIG_BLOCK	,则按set方式屏蔽
+							  若how为SIG_UNBLOCK, 则按set方式  不屏蔽 （解屏）
+							  若how为SIG_SETMASK,则按set方式设置
+						oldset:修改前的状态
+							
+					1、定义信号屏蔽集：signal_t
+					2、修改屏蔽集：
+						sigset_t  block=  0000000000000000 ; 
+						
+						
+				定时器（立即返回）：
+					unsigned int alarm(unsigned int seconds);
+					作用：设置seconds闹钟，一当设置的时间达到，则产生一个SIGALRM信号
+				
+				挂起函数(休眠)：等待一个信号到来就唤醒
+					pause（）
+		3.共享内存
+		4.消息队列
+		5.socket
+线程：
+	同步与互斥
+	
+	
+	
+练习题：
+	1、熟练今天的信号
+	2、Mysleep(int  sec);
+	
+	
+	
+	
+	自处理消息信号:
+		SIGUSER1 SIGUSER2  预留给用户
+	发送信号:
+		kill / raise
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

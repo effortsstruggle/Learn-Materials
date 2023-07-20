@@ -1,0 +1,18 @@
+struct mm_struct
+{
+    unsigned long code_start;//代码区
+    unsigned long code_end;
+    
+    unsigned long init_start;//初始化区
+    unsigned long init_end;
+    
+    unsigned long uninit_start;//未初始化区
+    unsigned long uninit_end;
+    
+    unsigned long heap_start;//堆区
+    unsigned long heap_end;
+    
+    unsigned long stack_start;//栈区
+    unsigned long stack_end;
+    //
+}

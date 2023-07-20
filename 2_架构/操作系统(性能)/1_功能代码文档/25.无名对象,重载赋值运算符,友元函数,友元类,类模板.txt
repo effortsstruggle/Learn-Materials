@@ -1,0 +1,222 @@
+一、无名对象（没有名字的对象）：直接调用构造器生成的对象   （常对象）
+		类名(值)p
+		pepole(1001,"wangqin");
+	
+		People p[5]={
+						people(1001,"wangqin"),	
+						people(1002,"liyan"),
+						people(1003,"liuling")
+					};
+	
+	
+二、友元函数：A函数在B类中声明为友元时，A函数就可以访问B类中所有成员（包括私有和保护）
+	缺点：破坏了封装性。
+
+三、类的前置声明：
+	class 类名;
+
+四、友元类：A类声明在B中为友元时，A类就可以访问B类任意的成员（包括私有和保护）。
+
+	返回类型 函数名A(...)
+	{
+		...
+	}
+	class B
+	{
+		...
+		friend 返回类型 函数名A(...);
+	};
+	类外访问类中私有或保护成员时，提供公有方法即可。
+
+
+五、深赋值:
+
+	默认方法：(***********)
+		每一个类中，都有一个默认拷贝构造器
+			类名(类名&)
+			
+		每一个类中，都有如下默认赋值运算方法
+			mystring& operator=(mystring&)  //对象赋值
+		
+		深赋值：			
+			//深赋值方法
+			1、先释放空间
+			assert(this->str!=NULL);
+			delete [] this->str;
+			2、申请空间
+			this->str=new char[s.length()+1];
+			assert(this->str!=NULL);
+			3、拷贝内容
+			strcpy(this->str,s.str)	
+	
+	类成员对象：类对象作为成员属性(***********)
+
+	该类成员对象的实例化：由构造器初始化列表来决定
+
+
+	//情况1：初始化列表来决定调用name的构造器   
+	class 类
+	{
+		类(...):name("abc");
+	...
+		string name; 
+	};  
+
+	PS:string s="abcd";//系统为用户封装了字符串操作的类（将C语言的知识点封装）
+
+	//情况2：初始化列表来决定调用name的构造器   
+	class 类
+	{
+		类(...); 	//该初始化列表中没有决定调用name的构造器是时，编译器会默认添加name();
+	...
+		string name;
+	};  
+
+
+六、类模板
+	1.函数模板(泛型函数)：
+		定义：
+		template<typname T>
+		T 函数名(T d,...)
+		{
+			
+		}
+
+	2.泛型类(类模板)：方法过程一致，数据不明确
+		定义：
+		template<typname T1,typname T2,,,>
+		template<class T1,class T2....class Tn>
+		class 类名
+		{
+		...
+		...
+			T1 a;
+		};
+
+	注意：在外类去定义方法时
+	
+	3.	template<typename T>
+		T calc<T>::add()
+		{
+			return a+b;
+		}	
+		
+PS:1、在类外定义泛型方法时，必须声明template<typename>，	
+   2、在类外用到泛型类名时（由于该类名是一个泛，必须指定类型>
+   3、泛型是由定义对象是来明确
+	  类<类型1,...>  对象;
+	  
+	  
+上午练习题：
+	1、把上午飞哥讲的mystring自己理解一遍并默写
+	2、把昨天的练习题做完
+	3、复习自己薄弱的地方。
+	
+下午练习：
+练习题：
+	1、将今天飞哥讲的案例自己再敲一遍
+	2、复习之前的内容
+	3、做练习题
+
+练习题2：
+		1、默写栈
+		2、改为泛型栈
+		
+练习题3：	
+	1、定义一个泛型数组,并实现如下方法：(基础还需要加强)
+		template<typename T>
+		class array
+		{
+		public:
+			array();//空的构造器
+			array(T* b,int n);//将b中n个元素存储
+			array(array&);//拷贝构造器
+			int getMax();//求最大值
+			int getMin();//求最小值
+			void display();//输出所有元素
+			void sort();//从小到大排序
+			
+		private:
+			T pbuf[100];//存储元素
+			int ilen;//记录buf中元素的个数
+		};
+		int main()
+		{
+			int buf[10]={1,4,3,2,5,7,6,8};
+			array<int> a(buf,8);//将buf中的8个元素保存到a类中的pbuf中
+			cout<<a.getMax()<<endl;
+			cout<<a.getMin()<<endl;
+			a.display();
+			a.sort();
+			a.display();
+		}
+	1、定义一个泛型数组,并实现如下方法：(基础良好)
+		template<typename T>
+		class array
+		{
+		public:
+			array();//空的构造器
+			array(T* b,int n);//将b中n个元素存储
+			array(array&);//拷贝构造器
+			T* getMax();//求最大值
+			T* getMin();//求最小值
+			void display();//输出所有元素
+			void sort();//从小到大排序
+			~array();//析构器
+			array& operator=(array&);//重载赋值运算符
+		private:
+			T* pbuf;//存储元素--指向堆区（跟mystring类似）
+			int ilen;//记录buf中元素的个数
+		};
+		int main()
+		{
+			int buf[10]={1,4,3,2,5,7,6,8};
+			array<int> a(buf,8);
+			cout<<a.getMax()<<endl;
+			cout<<a.getMin()<<endl;
+			a.display();
+			a.sort();
+			a.display();
+		}
+			
+	2、升级：若main中内容如下呢： (挑战，能完成最好，不能就放弃，别死撑 )
+		定义一个people类
+		class people
+		{
+		...
+		private:
+			int id;
+			string name;
+			flaot score;
+		};
+		int main()
+		{
+			people buf[10]={....};
+			array<people> a(buf,8);
+			cout<<a.getMax()<<endl;//求最大成绩的信息
+			cout<<a.getMin()<<endl;//求最小成绩人的信息
+			a.display();
+			a.sort();//按照成绩排名
+			a.display();
+		}	
+		
+		
+		
+		//数组：返回局部变量，需要用 &  ， 要不然用下标法，或者地址
+		
+		//数组段错误：下标越界
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+
+

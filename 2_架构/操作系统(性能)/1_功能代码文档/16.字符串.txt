@@ -1,0 +1,56 @@
+
+字符：
+	'a'--97
+字符串：就是一连串字符，表达式的结果为一个地址,地址空间都是常量空间(常量空间不能修改)
+	char* p="abc";//p存放的是 "abc的首地址 也就是a的地址 "  
+
+字符数组：也是一连串的字符变量空间，数组名就是首地址
+	char buf[6]="hello";
+
+由于字符串功能操作（拷贝，查找，清空值等）功能使用频率较高，所以系统为用户提供了接口。
+C语言：头文件
+	1、求字符串长度:
+		unsigned int strlen(const char* );
+	2、拷贝 
+		char* strcpy(char* des,const char* src);   添加\0
+			功能：将src源字符串拷贝到des目标字符串中
+		
+		char* strncpy(char* des,const char* src,int n);   添加\0
+			功能：将src源字符串的n个字符拷贝到des目标字符串中
+	
+	3、比较字符串大小：
+		int strcmp(const char*str1,const char* str2);
+			str1==str2   	返回0
+			str1>str2   	返回1
+			str1<str2		返回-1
+		int strcmp(const char*str1,const char* str2);
+			str1==str2   	返回0
+			str1>str2   	返回1
+			str1<str2		返回-1
+	
+	4、查找函数
+		1、查找子字符
+			char* strchr(char* str1,char ch);
+		2、字符子字符串
+		char *strstr(const char* haystack, const char*  needle)
+	
+	5、内存拷贝
+		memcpy()
+	
+	6、拼接字符串
+		strcat();
+	
+	
+
+
+常用系统功能API:
+	system("shell命令");
+	
+	
+	
+	
+	
+	
+	
+	
+	

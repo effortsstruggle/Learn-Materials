@@ -1,0 +1,139 @@
+struct file_struct 
+{
+	...
+	int count;//代表被打开的数量
+};
+
+PS：close(fd)时，count--一次。当count的数量为0时，此时系统才会将文件描述符释放掉。
+
+1.重定向：
+
+	dup:复制 fd指向的 文件描述符，给最低未被使用的文件描述符：
+		int dup(int fd);
+		返回值：返回最小的未被使用的文件描述符
+				形参：fd描述符功能
+				功能：复制fd文文件描述符。
+
+	int dup2(int oldfd, int newfd);
+	返回值：newfd
+			关闭newfd。 
+			oldfd复制一份 给newfd，
+			
+	fd1 = dup2(fd, STDOUT_FILENO)；
+		dup2复制了fd的文件描述符，也就是让fd1和fd指向同一个文件，
+		并且把STDOUT_FILENO文件描述符赋值给fd1，把STDOUT_FILENO关闭。
+			
+		
+		
+	若参数newfd为一个打开的文件描述符，则newfd所指的文件会先被关闭，
+	若newfd等于oldfd，则返回newfd,而不关闭newfd所指的文件。
+	
+	 返回值：如成功则返回新的文件描述符，否则出错返回-1. 
+	 
+	注意：由dup2函数返回的新文件描述符一定是当前可用文件描述符中的最小值。
+
+
+
+2.守护进程（精灵进程）daemon：是运行在后台的一种进程。它独立于控制终端，不受用户和控制影响。
+   
+   创建精灵进程的步骤：
+	1.不受终端(子进程)，用户（setsid）影响：
+	2.修改文件掩码 umask()
+	3.修改指定路径 chdir()
+				//3.修改指定工作目录(当打开文件时，是绝对路径时,这个没有作用，相对路径时，才有作用)
+                //根目录和根目录下的目录没有权限创建文件
+	4.关闭文件描述符
+	sysconf(_SC_OPEN_MAX):获取配置信息
+			_SC_OPEN_MAX : 一个进程打开文件的最大数(最少不能小于20)
+
+查询进程列表信息：
+	ps  -e
+干掉进程：
+	kill -9  进程PID
+	killall 进程名
+
+
+脚本:有限的Shell的集合,并自动化运行（.sh）
+#! /bin/bash		#如下的Shell命令交给bash来执行
+
+    
+	
+service命令：执行指定服务的/etc/init.d下的脚本
+	
+
+
+#!/bin/bash
+#定义变量
+SERVERNAME="print"
+#定义函数
+start()
+{
+		#输出语句
+        echo "start $SERVERNAME"
+        #运行程序
+        /home/gjj/desktop/0825/class/$SERVERNAME
+        echo "start $SERVERNAME SUCCESS!"
+}
+
+stop()
+{
+        echo "stop $SERVERNAME"
+        #终止程序
+        killall $SERVERNAME
+        echo "stop SUCCESS"
+}
+restart()
+{
+        #重启
+        stop
+        start
+}
+#获取第二个实参,并进行判定
+case "$1" in
+start)
+}
+restart()
+{
+        #重启
+        stop
+}
+restart()
+{
+        #重启
+        stop
+        start
+}
+#获取第二个实参,并进行判定
+case "$1" in
+start)
+        #调用函数
+        start
+        ;;
+stop)s
+        #调用函数
+        stop
+        ;;
+restart)
+        #调用函数
+        restart
+        ;;
+*)
+        #其他
+        echo "print:$0 start|stop|restart"
+        exit 0;
+esac
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
