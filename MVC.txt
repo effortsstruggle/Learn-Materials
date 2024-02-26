@@ -1,0 +1,144 @@
+/*****************************************Model*******************************************/
+#pragma once
+#include <vector>
+#include <string>
+#include <iostream>
+using namespace std;
+
+struct UserInfo
+{
+        string userName;
+        string passWord;
+        string name;
+};
+
+class UserModel
+{
+public:
+        UserModel() = default;
+private:
+        vector<UserInfo> m_userInfo;
+public:
+        void addUserInfo(const UserInfo& info)
+        {
+                m_userInfo.push_back(info);
+        }
+        UserInfo& at(int idx)
+        {
+                return m_userInfo[idx];
+        }
+        int size()
+        {
+                return (int)m_userInfo.size();
+        }
+};
+
+
+
+/*************************************View************************************/
+#pragma once
+#include "Model.h"
+
+class OutView
+{
+public:
+        OutView() = default;
+public:
+        void PrintUserInfo(const UserInfo& info)
+        {
+                cout << "账号：" << info.userName << "   密码：" << info.passWord << "   名字：" << info.name << endl;
+        }
+};
+
+
+
+/***********************************Controller*************************************/
+#pragma once
+#include "View.h"
+
+class UserController
+{
+private:
+        UserModel* m_model;
+        OutView* m_view;
+public:
+        UserController(UserModel* model, OutView* view) : m_model(model), m_view(view) {}
+public:
+        void addUserInfo(const UserInfo& info)
+        {
+                m_model->addUserInfo(info);
+        }
+        UserInfo& at(int idx)
+        {
+                return m_model->at(idx);
+        }
+        void PrintAllUserInfo()
+        {
+                for (int i = 0; i < m_model->size(); ++i)
+                {
+                        m_view->PrintUserInfo(m_model->at(i));
+                }
+        }
+};
+
+
+
+
+
+//使用
+
+
+#include "Controller.h"
+#include <time.h>
+
+//模拟从数据库或本地读数据
+UserModel* CreateModel()
+{
+        srand((unsigned int)time(NULL));
+        int len = rand() % 100;
+        UserModel* ret = new UserModel;
+        for (int i = 0; i < len; ++i)
+        {
+                UserInfo tmpInfo;
+
+                char tmp[256] = { 0 };
+                sprintf_s(tmp, "%d%d%d%d%d%d", rand() % 10, rand() % 10, rand() % 10, rand() % 10, rand() % 10, rand() % 10);
+                tmpInfo.userName.append(tmp);
+                memset(tmp, 0, 256);
+                sprintf_s(tmp, "%d%d%d%d%d%d%d%d", rand() % 10, rand() % 10, rand() % 10, rand() % 10, rand() % 10, rand() % 10, rand() % 10, rand() % 10);
+                tmpInfo.passWord.append(tmp);
+                memset(tmp, 0, 256);
+                sprintf_s(tmp, "%d%d%d", rand() % 10, rand() % 10, rand() % 10);
+                tmpInfo.name.append(tmp);
+
+                ret->addUserInfo(tmpInfo);
+        }
+        return ret;
+}
+
+
+int main()
+{
+        auto model = CreateModel();
+        auto view = new OutView;
+
+        auto control = new UserController(model, view);
+
+        control->PrintAllUserInfo();
+        getchar();
+        return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
